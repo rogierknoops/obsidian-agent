@@ -47,6 +47,11 @@ obsidian-agent/
   - All tags with file counts
   - All YAML frontmatter keys with file counts
 - This summary is provided to the model by default; per-file content is loaded only when requested.
+
+### Backups
+- Optional `--auto-backup` flag (chat/ask) will create a git commit in the vault before edits (no push).
+- Default commit message: "Remove pages key from book YAML frontmatter" (you can edit at prompt).
+- You must push manually after reviewing: `git push`.
 ### Adding Features
 1. Vault operations → `VaultManager` class in `vault.py`
 2. AI tools → `self.tools` list + `_execute_tool()` in `agent.py`

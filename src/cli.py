@@ -4,12 +4,13 @@ CLI interface for the Obsidian Vault Agent.
 
 import os
 import sys
+import subprocess
 import click
 from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
-from rich.prompt import Prompt
+from rich.prompt import Prompt, Confirm
 from rich.theme import Theme
 from dotenv import load_dotenv
 
@@ -39,6 +40,57 @@ def get_config():
     return api_key, vault_path
 
 
+def maybe_backup_repo(vault_path: Path, default_message: str):
+    """Optionally create a git commit before edits."""
+    git_dir = vault_path / ".git"
+    if not git_dir.exists():
+        console.print("[warning]Skipping backup: no .git repository found in vault[/warning]")
+        return
+
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=vault_path,
+        capture_output=True,
+        text=True,
+    )
+    if status.returncode != 0:
+        console.print(f"[warning]Skipping backup: git status failed ({status.stderr.strip()})[/warning]")
+        return
+
+    changes = status.stdout.strip().splitlines()
+    if not changes:
+        console.print("[info]Vault clean: no changes to commit[/info]")
+        return
+
+    console.print(Panel("\n".join(changes), title="Pending changes", border_style="yellow"))
+    commit_message = Prompt.ask("Commit message", default=default_message)
+    if not commit_message.strip():
+        console.print("[warning]No commit created (empty message).[/warning]")
+        return
+
+    if not Confirm.ask("Create commit now?", default=True):
+        console.print("[info]Backup skipped at your request.[/info]")
+        return
+
+    add = subprocess.run(["git", "add", "."], cwd=vault_path, capture_output=True, text=True)
+    if add.returncode != 0:
+        console.print(f"[error]git add failed: {add.stderr.strip()}[/error]")
+        return
+
+    commit = subprocess.run(
+        ["git", "commit", "-m", commit_message],
+        cwd=vault_path,
+        capture_output=True,
+        text=True,
+    )
+    if commit.returncode != 0:
+        console.print(f"[error]git commit failed: {commit.stderr.strip()}[/error]")
+        return
+
+    console.print("[success]✓ Backup commit created[/success]")
+    console.print("[dim]Review then push when ready: git push[/dim]")
+
+
 @click.group()
 @click.version_option(version="1.0.0")
 def cli():
@@ -49,7 +101,18 @@ def cli():
 @cli.command()
 @click.option("--vault", "-v", help="Path to your Obsidian vault")
 @click.option("--api-key", "-k", envvar="OPENAI_API_KEY", help="OpenAI API key")
-def chat(vault: str, api_key: str):
+@click.option(
+    "--auto-backup/--no-auto-backup",
+    default=False,
+    help="Create a git commit of the vault before starting (no push).",
+)
+@click.option(
+    "--backup-message",
+    default="Remove pages key from book YAML frontmatter",
+    show_default=True,
+    help="Commit message to use if auto-backup is enabled.",
+)
+def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str):
     """Start an interactive chat session with your vault."""
     
     # Load defaults from env
@@ -73,6 +136,9 @@ def chat(vault: str, api_key: str):
         console.print(f"[error]Error: Vault path does not exist: {vault_path}[/error]")
         sys.exit(1)
     
+    if auto_backup:
+        maybe_backup_repo(vault_path, backup_message)
+
     # Initialize agent
     try:
         agent = VaultAgent(str(vault_path), api_key)
@@ -153,7 +219,18 @@ def chat(vault: str, api_key: str):
 @click.option("--vault", "-v", help="Path to your Obsidian vault")
 @click.argument("prompt")
 @click.option("--api-key", "-k", envvar="OPENAI_API_KEY", help="OpenAI API key")
-def ask(vault: str, api_key: str, prompt: str):
+@click.option(
+    "--auto-backup/--no-auto-backup",
+    default=False,
+    help="Create a git commit of the vault before running (no push).",
+)
+@click.option(
+    "--backup-message",
+    default="Remove pages key from book YAML frontmatter",
+    show_default=True,
+    help="Commit message to use if auto-backup is enabled.",
+)
+def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message: str):
     """Send a single prompt to the agent."""
     
     env_api_key, env_vault = get_config()
@@ -168,8 +245,12 @@ def ask(vault: str, api_key: str, prompt: str):
         console.print("[error]Error: No vault path provided.[/error]")
         sys.exit(1)
     
+    vault_path = Path(vault).expanduser().resolve()
+    if auto_backup:
+        maybe_backup_repo(vault_path, backup_message)
+
     try:
-        agent = VaultAgent(vault, api_key)
+        agent = VaultAgent(str(vault_path), api_key)
         with console.status("[cyan]Thinking...[/cyan]", spinner="dots"):
             response = agent.chat(prompt)
         console.print(Markdown(response))
