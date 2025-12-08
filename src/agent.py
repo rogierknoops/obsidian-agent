@@ -42,6 +42,7 @@ class VaultAgent:
         self.client = OpenAI(api_key=api_key)
         self.model = model
         self.conversation_history = []
+        self._vault_index = None
         
         # Define tools for OpenAI
         self.tools = [
@@ -164,6 +165,29 @@ class VaultAgent:
             }
         ]
     
+    def _build_vault_index(self) -> str:
+        """Scan the vault once to provide a default full-scope summary."""
+        files = self.vault.list_files()
+        tags = self.vault.list_tags()
+        yaml_keys = self.vault.list_yaml_keys()
+
+        lines = []
+        lines.append("Vault Index (auto-scanned at conversation start)")
+        lines.append(f"- Files: {len(files)}")
+        if files:
+            lines.append("  File list:")
+            for f in files:
+                lines.append(f"    - {f.relative_path}")
+        lines.append(f"- Tags: {len(tags)}")
+        if tags:
+            for tag, file_list in tags.items():
+                lines.append(f"    - #{tag} ({len(file_list)} files)")
+        lines.append(f"- YAML keys: {len(yaml_keys)}")
+        if yaml_keys:
+            for key, file_list in yaml_keys.items():
+                lines.append(f"    - {key} ({len(file_list)} files)")
+        return "\n".join(lines)
+    
     def _execute_tool(self, tool_name: str, tool_input: dict) -> str:
         """Execute a tool and return the result."""
         try:
@@ -233,8 +257,13 @@ class VaultAgent:
             "role": "user",
             "content": user_message
         })
-        
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + self.conversation_history
+        # Build full-scope vault index once per conversation
+        if self._vault_index is None:
+            self._vault_index = self._build_vault_index()
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": self._vault_index},
+        ] + self.conversation_history
         
         while True:
             response = self.client.chat.completions.create(
@@ -277,3 +306,4 @@ class VaultAgent:
     def reset_conversation(self):
         """Clear the conversation history."""
         self.conversation_history = []
+        self._vault_index = None

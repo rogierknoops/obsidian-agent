@@ -41,6 +41,12 @@ obsidian-agent/
 - `list_tags` - List all tags across entire vault with file counts
 - `list_yaml_keys` - List all unique YAML frontmatter keys with file counts
 
+### Default Full-Scope Scan
+- On conversation start, the agent auto-scans the entire vault to collect:
+  - Complete file list (Markdown only)
+  - All tags with file counts
+  - All YAML frontmatter keys with file counts
+- This summary is provided to the model by default; per-file content is loaded only when requested.
 ### Adding Features
 1. Vault operations → `VaultManager` class in `vault.py`
 2. AI tools → `self.tools` list + `_execute_tool()` in `agent.py`
