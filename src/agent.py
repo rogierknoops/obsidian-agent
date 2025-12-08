@@ -36,7 +36,7 @@ Always explain your actions and provide helpful context about what you're doing.
 class VaultAgent:
     """AI-powered agent for interacting with an Obsidian vault."""
     
-    def __init__(self, vault_path: str, api_key: str, model: str = "gpt-4o"):
+    def __init__(self, vault_path: str, api_key: str, model: str = "gpt-5.1"):
         self.vault = VaultManager(vault_path)
         self.client = OpenAI(api_key=api_key)
         self.model = model

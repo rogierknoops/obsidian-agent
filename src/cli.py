@@ -85,7 +85,7 @@ def chat(vault: str, api_key: str):
     console.print(Panel.fit(
         "[bold cyan]🗃️  Obsidian Vault Agent[/bold cyan]\n\n"
         f"[dim]Connected to:[/dim] {vault_path.name}/\n"
-        f"[dim]Model:[/dim] GPT-4o\n\n"
+        f"[dim]Model:[/dim] GPT-5.1\n\n"
         "[dim]Commands:[/dim]\n"
         "  • Type your questions or instructions\n"
         "  • [bold]/tree[/bold] - Show vault structure\n"
