@@ -156,6 +156,24 @@ class VaultManager:
         add_directory(self.vault_path)
         return "\n".join(lines)
     
+    def _is_valid_tag(self, tag: str) -> bool:
+        """Check if a string is a valid Obsidian tag (not a wikilink, template, etc.)."""
+        if not tag:
+            return False
+        # Exclude wikilinks [[...]]
+        if tag.startswith('[[') or tag.startswith('['):
+            return False
+        # Exclude template variables {{...}}
+        if tag.startswith('{{') or tag.startswith('{'):
+            return False
+        # Exclude things that look like URLs or paths with dots at start
+        if tag.startswith('.') or tag.startswith('@'):
+            return False
+        # Must start with a letter
+        if not tag[0].isalpha():
+            return False
+        return True
+    
     def list_tags(self) -> dict[str, list[str]]:
         """
         Extract all tags from the vault.
@@ -164,8 +182,16 @@ class VaultManager:
         """
         tag_to_files: dict[str, list[str]] = defaultdict(list)
         
-        # Regex for inline tags: #tag (but not inside code blocks or URLs)
-        inline_tag_pattern = re.compile(r'(?<!\S)#([a-zA-Z][a-zA-Z0-9_/-]*)')
+        # Regex for inline tags: #tag
+        # - Must be preceded by whitespace or start of line
+        # - Must NOT be followed by another # (that's a heading)
+        # - Must NOT be followed by [[ (that's a wikilink)
+        # - Must NOT be followed by {{ (that's a template)
+        # - Tag must start with a letter and contain only letters, numbers, _, -, /
+        inline_tag_pattern = re.compile(
+            r'(?:^|(?<=\s))#(?!#)(?!\[\[)(?!\{\{)([a-zA-Z][a-zA-Z0-9_/-]*)',
+            re.MULTILINE
+        )
         
         # Regex for YAML frontmatter
         frontmatter_pattern = re.compile(r'^---\s*\n(.*?)\n---', re.DOTALL)
@@ -178,33 +204,43 @@ class VaultManager:
             fm_match = frontmatter_pattern.match(content)
             if fm_match:
                 frontmatter = fm_match.group(1)
-                # Look for tags: [tag1, tag2] or tags:\n  - tag1
-                # Simple approach: find lines with "tags:" and extract values
+                in_tags_section = False
+                
                 for line in frontmatter.split('\n'):
-                    line = line.strip()
-                    if line.startswith('tags:'):
+                    stripped = line.strip()
+                    
+                    # Check if we're entering tags section
+                    if stripped.startswith('tags:'):
+                        in_tags_section = True
                         # Inline format: tags: [tag1, tag2] or tags: tag1, tag2
-                        rest = line[5:].strip()
+                        rest = stripped[5:].strip()
                         if rest:
-                            # Remove brackets if present
                             rest = rest.strip('[]')
                             for tag in rest.split(','):
-                                tag = tag.strip().strip('"\'')
-                                if tag:
+                                tag = tag.strip().strip('"\'#')
+                                if self._is_valid_tag(tag):
                                     found_tags.add(tag)
-                    elif line.startswith('- ') and 'tags' in frontmatter:
+                    elif in_tags_section and stripped.startswith('- '):
                         # List format under tags:
-                        tag = line[2:].strip().strip('"\'')
-                        if tag and not ':' in tag:  # Avoid other YAML keys
+                        tag = stripped[2:].strip().strip('"\'#')
+                        if self._is_valid_tag(tag):
                             found_tags.add(tag)
+                    elif in_tags_section and not stripped.startswith('-') and ':' in stripped:
+                        # We've moved to a new YAML key
+                        in_tags_section = False
             
             # Extract inline tags (skip code blocks)
             # Remove code blocks first
             content_no_code = re.sub(r'```.*?```', '', content, flags=re.DOTALL)
             content_no_code = re.sub(r'`[^`]+`', '', content_no_code)
             
+            # Also remove wikilinks to avoid false positives
+            content_no_code = re.sub(r'\[\[.*?\]\]', '', content_no_code)
+            
             for match in inline_tag_pattern.finditer(content_no_code):
-                found_tags.add(match.group(1))
+                tag = match.group(1)
+                if self._is_valid_tag(tag):
+                    found_tags.add(tag)
             
             # Add to mapping
             for tag in found_tags:
