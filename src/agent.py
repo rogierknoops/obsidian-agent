@@ -17,6 +17,7 @@ You have access to the following tools to interact with the vault:
 3. **write_file** - Write or update content to a file
 4. **search** - Search for files containing specific text
 5. **tree** - Show the vault's folder structure
+6. **list_tags** - List all tags used across the entire vault with file counts
 
 When the user asks you to modify files:
 - Always show what changes you plan to make before executing
@@ -135,6 +136,18 @@ class VaultAgent:
                         "required": []
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "list_tags",
+                    "description": "List all tags used across the entire vault. Returns every tag (both #inline-tags and YAML frontmatter tags) with the count of files using each tag.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                }
             }
         ]
     
@@ -176,6 +189,15 @@ class VaultAgent:
             
             elif tool_name == "tree":
                 return self.vault.get_file_tree(tool_input.get("max_depth", 3))
+            
+            elif tool_name == "list_tags":
+                tags = self.vault.list_tags()
+                if not tags:
+                    return "No tags found in the vault."
+                result = f"Found {len(tags)} unique tag(s) across the vault:\n\n"
+                for tag, files in tags.items():
+                    result += f"- #{tag} ({len(files)} file{'s' if len(files) != 1 else ''})\n"
+                return result
             
             else:
                 return f"Unknown tool: {tool_name}"

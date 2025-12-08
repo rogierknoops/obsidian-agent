@@ -3,9 +3,11 @@ Vault operations module for reading and modifying Obsidian files.
 """
 
 import os
+import re
 from pathlib import Path
 from typing import Optional
 from dataclasses import dataclass
+from collections import defaultdict
 import pathspec
 
 
@@ -153,4 +155,60 @@ class VaultManager:
         
         add_directory(self.vault_path)
         return "\n".join(lines)
+    
+    def list_tags(self) -> dict[str, list[str]]:
+        """
+        Extract all tags from the vault.
+        Returns a dict mapping tag names to list of files containing that tag.
+        Finds both #inline-tags and YAML frontmatter tags.
+        """
+        tag_to_files: dict[str, list[str]] = defaultdict(list)
+        
+        # Regex for inline tags: #tag (but not inside code blocks or URLs)
+        inline_tag_pattern = re.compile(r'(?<!\S)#([a-zA-Z][a-zA-Z0-9_/-]*)')
+        
+        # Regex for YAML frontmatter
+        frontmatter_pattern = re.compile(r'^---\s*\n(.*?)\n---', re.DOTALL)
+        
+        for vault_file in self.list_files():
+            found_tags = set()
+            content = vault_file.content
+            
+            # Extract frontmatter tags
+            fm_match = frontmatter_pattern.match(content)
+            if fm_match:
+                frontmatter = fm_match.group(1)
+                # Look for tags: [tag1, tag2] or tags:\n  - tag1
+                # Simple approach: find lines with "tags:" and extract values
+                for line in frontmatter.split('\n'):
+                    line = line.strip()
+                    if line.startswith('tags:'):
+                        # Inline format: tags: [tag1, tag2] or tags: tag1, tag2
+                        rest = line[5:].strip()
+                        if rest:
+                            # Remove brackets if present
+                            rest = rest.strip('[]')
+                            for tag in rest.split(','):
+                                tag = tag.strip().strip('"\'')
+                                if tag:
+                                    found_tags.add(tag)
+                    elif line.startswith('- ') and 'tags' in frontmatter:
+                        # List format under tags:
+                        tag = line[2:].strip().strip('"\'')
+                        if tag and not ':' in tag:  # Avoid other YAML keys
+                            found_tags.add(tag)
+            
+            # Extract inline tags (skip code blocks)
+            # Remove code blocks first
+            content_no_code = re.sub(r'```.*?```', '', content, flags=re.DOTALL)
+            content_no_code = re.sub(r'`[^`]+`', '', content_no_code)
+            
+            for match in inline_tag_pattern.finditer(content_no_code):
+                found_tags.add(match.group(1))
+            
+            # Add to mapping
+            for tag in found_tags:
+                tag_to_files[tag].append(vault_file.relative_path)
+        
+        return dict(sorted(tag_to_files.items(), key=lambda x: x[0].lower()))
 

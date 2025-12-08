@@ -38,6 +38,7 @@ obsidian-agent/
 - `write_file` - Write/update files
 - `search` - Search content across files
 - `tree` - Show vault folder structure
+- `list_tags` - List all tags across entire vault with file counts
 
 ### Adding Features
 1. Vault operations → `VaultManager` class in `vault.py`
