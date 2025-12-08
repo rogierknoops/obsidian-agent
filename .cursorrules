@@ -50,7 +50,7 @@ obsidian-agent/
 
 ### Backups
 - Optional `--auto-backup` flag (chat/ask) will create a git commit in the vault before edits (no push).
-- Default commit message: "Remove pages key from book YAML frontmatter" (you can edit at prompt).
+- Default commit message: "Add a description of the changes" (you can edit at prompt).
 - You must push manually after reviewing: `git push`.
 ### Adding Features
 1. Vault operations → `VaultManager` class in `vault.py`

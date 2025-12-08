@@ -108,7 +108,7 @@ def cli():
 )
 @click.option(
     "--backup-message",
-    default="Remove pages key from book YAML frontmatter",
+    default="Add a description of the changes",
     show_default=True,
     help="Commit message to use if auto-backup is enabled.",
 )
@@ -226,7 +226,7 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str):
 )
 @click.option(
     "--backup-message",
-    default="Remove pages key from book YAML frontmatter",
+    default="Add a description of the changes",
     show_default=True,
     help="Commit message to use if auto-backup is enabled.",
 )
