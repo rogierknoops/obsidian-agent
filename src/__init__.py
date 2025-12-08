@@ -1,0 +1,2 @@
+# Obsidian Vault Agent
+
