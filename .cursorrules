@@ -62,6 +62,7 @@ The agent has these tools available:
 
 ## Safety
 
+- **Before editing any files, commit current vault state to GitHub backup** (`obsidian-backup` repo).
 - Before bulk edits, explain the planned changes in bullets.
 - Prefer editing specific files or folders; avoid global transforms unless explicitly asked.
 - Never delete files. Use Obsidian-style archiving instead (e.g. move to an `_archive` folder) if instructed.
