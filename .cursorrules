@@ -47,8 +47,55 @@ The agent has these tools available:
 2. New AI tools → add to `self.tools` list in `VaultAgent` class and implement in `_execute_tool()`
 3. New CLI commands → add with `@cli.command()` decorator in `cli.py`
 
+---
+
+# Obsidian Vault Agent Rules
+
+## Scope
+
+- This is an Obsidian vault. All files are user notes.
+- Only edit Markdown files: `**/*.md`.
+- Never touch:
+  - `.obsidian/**`
+  - `.git/**`
+  - Any non-Markdown file (PDF, PNG, etc.).
+
+## Safety
+
+- Before bulk edits, explain the planned changes in bullets.
+- Prefer editing specific files or folders; avoid global transforms unless explicitly asked.
+- Never delete files. Use Obsidian-style archiving instead (e.g. move to an `_archive` folder) if instructed.
+
+## Style + Structure
+
+- Preserve existing frontmatter and YAML keys.
+- Preserve Obsidian link syntax: `[[Page Name]]`, `[[Page Name|Alias]]`, `![[Embeds]]`.
+- Preserve and do not break Dataview or Advanced URI snippets.
+- For code blocks, keep the language tag and fenced formatting.
+
+## Dataview
+
+- Do not change the structure of Dataview queries unless explicitly asked.
+- When modifying tables or properties consumed by Dataview, keep field names stable.
+
+## Editing Behavior
+
+- When refactoring a note:
+  - Keep headings hierarchy intact unless a better hierarchy is clearly required.
+  - Keep backlinks meaningful; do not rename pages without updating all references.
+- When renaming files:
+  - Update all `[[wikilinks]]` to match the new name in the entire vault.
+  - Never change note IDs if the vault uses them for linking.
+
+## Output
+
+- When you finish a task, list:
+  - Files you changed
+  - What you changed in each file (1–3 bullets per file)
+
+---
+
 ## Testing
 - Test with a real Obsidian vault
 - Use `/tree` and `/files` commands to verify vault access
 - Test file modifications on non-critical notes first
-
