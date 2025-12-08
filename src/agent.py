@@ -18,6 +18,7 @@ You have access to the following tools to interact with the vault:
 4. **search** - Search for files containing specific text
 5. **tree** - Show the vault's folder structure
 6. **list_tags** - List all tags used across the entire vault with file counts
+7. **list_yaml_keys** - List all unique YAML frontmatter keys across the entire vault with file counts
 
 When the user asks you to modify files:
 - Always show what changes you plan to make before executing
@@ -148,6 +149,18 @@ class VaultAgent:
                         "required": []
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "list_yaml_keys",
+                    "description": "List all unique YAML frontmatter keys across the entire vault with the count of files using each key.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                }
             }
         ]
     
@@ -197,6 +210,15 @@ class VaultAgent:
                 result = f"Found {len(tags)} unique tag(s) across the vault:\n\n"
                 for tag, files in tags.items():
                     result += f"- #{tag} ({len(files)} file{'s' if len(files) != 1 else ''})\n"
+                return result
+
+            elif tool_name == "list_yaml_keys":
+                keys = self.vault.list_yaml_keys()
+                if not keys:
+                    return "No YAML frontmatter keys found in the vault."
+                result = f"Found {len(keys)} unique YAML frontmatter key(s) across the vault:\n\n"
+                for key, files in keys.items():
+                    result += f"- {key} ({len(files)} file{'s' if len(files) != 1 else ''})\n"
                 return result
             
             else:

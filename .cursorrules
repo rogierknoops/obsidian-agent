@@ -39,6 +39,7 @@ obsidian-agent/
 - `search` - Search content across files
 - `tree` - Show vault folder structure
 - `list_tags` - List all tags across entire vault with file counts
+- `list_yaml_keys` - List all unique YAML frontmatter keys with file counts
 
 ### Adding Features
 1. Vault operations → `VaultManager` class in `vault.py`

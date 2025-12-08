@@ -9,6 +9,7 @@ from typing import Optional
 from dataclasses import dataclass
 from collections import defaultdict
 import pathspec
+from typing import Dict, List
 
 
 @dataclass
@@ -247,4 +248,27 @@ class VaultManager:
                 tag_to_files[tag].append(vault_file.relative_path)
         
         return dict(sorted(tag_to_files.items(), key=lambda x: x[0].lower()))
+
+    def list_yaml_keys(self) -> Dict[str, List[str]]:
+        """
+        List all unique top-level YAML frontmatter keys across the vault.
+        Returns a dict mapping key -> list of files containing that key.
+        """
+        key_to_files: Dict[str, List[str]] = defaultdict(list)
+
+        # Frontmatter block at start of file; allow BOM/whitespace and both \\n/\\r\\n line endings
+        frontmatter_pattern = re.compile(r'^\ufeff?\s*---\s*\r?\n(.*?)\r?\n---\s*(\r?\n|$)', re.DOTALL)
+        key_pattern = re.compile(r'^([A-Za-z0-9_\\-]+):', re.MULTILINE)
+
+        for vault_file in self.list_files():
+            content = vault_file.content
+            match = frontmatter_pattern.match(content)
+            if not match:
+                continue
+
+            frontmatter = match.group(1)
+            for key in key_pattern.findall(frontmatter):
+                key_to_files[key].append(vault_file.relative_path)
+
+        return dict(sorted(key_to_files.items(), key=lambda x: x[0].lower()))
 
