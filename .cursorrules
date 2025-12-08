@@ -1,0 +1,54 @@
+# Obsidian Vault Agent - Project Rules
+
+## Project Overview
+This is a Python CLI agent that uses OpenAI's GPT-4o to analyze and modify files in an Obsidian vault. It runs from the terminal and provides an interactive chat interface.
+
+## Tech Stack
+- Python 3.10+
+- OpenAI API (GPT-4o) with function calling/tools
+- Click for CLI
+- Rich for terminal UI
+- python-dotenv for configuration
+
+## Project Structure
+```
+obsidian-agent/
+├── main.py           # Entry point
+├── src/
+│   ├── cli.py        # CLI interface with Click + Rich
+│   ├── agent.py      # OpenAI agent with tool-use
+│   └── vault.py      # Vault file operations
+```
+
+## Code Style
+- Use type hints for all function parameters and return values
+- Use dataclasses for data structures
+- Keep functions focused and single-purpose
+- Handle errors gracefully with user-friendly messages
+- Use Rich for all terminal output formatting
+
+## Key Conventions
+- Vault operations go in `vault.py`
+- AI/LLM logic goes in `agent.py`
+- CLI commands and UI go in `cli.py`
+- Environment variables: `OPENAI_API_KEY`, `OBSIDIAN_VAULT_PATH`
+- The agent uses OpenAI's tool/function calling pattern
+
+## Tool Definitions
+The agent has these tools available:
+- `list_files` - List markdown files (with optional glob pattern)
+- `read_file` - Read file content
+- `write_file` - Write/update files
+- `search` - Search content across files
+- `tree` - Show vault folder structure
+
+## When Adding Features
+1. New vault operations → add to `VaultManager` class in `vault.py`
+2. New AI tools → add to `self.tools` list in `VaultAgent` class and implement in `_execute_tool()`
+3. New CLI commands → add with `@cli.command()` decorator in `cli.py`
+
+## Testing
+- Test with a real Obsidian vault
+- Use `/tree` and `/files` commands to verify vault access
+- Test file modifications on non-critical notes first
+
