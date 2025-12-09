@@ -6,6 +6,7 @@ import os
 import sys
 import subprocess
 import click
+from typing import Optional
 from pathlib import Path
 from rich.console import Console
 from rich.markdown import Markdown
@@ -112,6 +113,16 @@ def maybe_backup_repo(vault_path: Path, default_message: str):
     console.print("[dim]Review then push when ready: git push[/dim]")
 
 
+def write_markdown_log(log_path: str, content: str):
+    """Write the latest response to a markdown file, overwriting each time."""
+    path = Path(log_path).expanduser()
+    try:
+        path.write_text(content, encoding="utf-8")
+        console.print(f"[info]Saved response to {path}")
+    except Exception as e:
+        console.print(f"[warning]Failed to write log to {path}: {e}")
+
+
 @click.group()
 @click.version_option(version="1.0.0")
 def cli():
@@ -134,11 +145,16 @@ def cli():
     help="Commit message to use if auto-backup is enabled.",
 )
 @click.option(
+    "--log-md",
+    type=str,
+    help="Overwrite this markdown file with each agent response (disabled if not set).",
+)
+@click.option(
     "--model",
     type=click.Choice(["gpt-5.1", "gpt-4o-mini"]),
     help="Which model to use (prompted if not provided).",
 )
-def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, model: str | None):
+def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, log_md: Optional[str], model: Optional[str]):
     """Start an interactive chat session with your vault."""
     
     # Load defaults from env
@@ -234,6 +250,10 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, model
                 border_style="green",
                 padding=(1, 2)
             ))
+
+            # Optional: write latest response to markdown file
+            if log_md:
+                write_markdown_log(log_md, response)
             console.print()
             
         except KeyboardInterrupt:
@@ -259,11 +279,16 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, model
     help="Commit message to use if auto-backup is enabled.",
 )
 @click.option(
+    "--log-md",
+    type=str,
+    help="Overwrite this markdown file with the agent response (disabled if not set).",
+)
+@click.option(
     "--model",
     type=click.Choice(["gpt-5.1", "gpt-4o-mini"]),
     help="Which model to use (prompted if not provided).",
 )
-def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message: str, model: str | None):
+def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message: str, log_md: Optional[str], model: Optional[str]):
     """Send a single prompt to the agent."""
     
     env_api_key, env_vault = get_config()
@@ -289,6 +314,8 @@ def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message
         with console.status("[cyan]Thinking...[/cyan]", spinner="dots"):
             response = agent.chat(prompt)
         console.print(Markdown(response))
+        if log_md:
+            write_markdown_log(log_md, response)
     except Exception as e:
         console.print(f"[error]Error: {e}[/error]")
         sys.exit(1)

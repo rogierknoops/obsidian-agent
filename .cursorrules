@@ -57,6 +57,9 @@ obsidian-agent/
 - CLI prompts for model if none provided: choose between `gpt-5.1` (stronger reasoning) and `gpt-4o-mini` (faster/cheaper).
 - Override with `--model gpt-5.1` or `--model gpt-4o-mini` on chat/ask.
 - Shortcut: press `1` for gpt-5.1, `2` for gpt-4o-mini when prompted.
+
+### Logging
+- Optional `--log-md <path>` overwrites the given markdown file with the latest agent response (chat: each turn; ask: single response). Disabled if not set.
 ### Adding Features
 1. Vault operations → `VaultManager` class in `vault.py`
 2. AI tools → `self.tools` list + `_execute_tool()` in `agent.py`
