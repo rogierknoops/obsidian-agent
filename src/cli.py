@@ -173,6 +173,16 @@ def cli():
     help="If auto-backup is enabled, also push to origin/<current-branch> after commit.",
 )
 @click.option(
+    "--post-backup/--no-post-backup",
+    default=False,
+    help="After the agent responds, create a backup commit.",
+)
+@click.option(
+    "--post-backup-push/--no-post-backup-push",
+    default=False,
+    help="If post-backup is enabled, also push to origin/<current-branch> after commit.",
+)
+@click.option(
     "--log-md",
     type=str,
     help="Overwrite this markdown file with each agent response (disabled if not set).",
@@ -182,7 +192,17 @@ def cli():
     type=click.Choice(["gpt-5.1", "gpt-4o-mini"]),
     help="Which model to use (prompted if not provided).",
 )
-def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, backup_push: bool, log_md: Optional[str], model: Optional[str]):
+def chat(
+    vault: str,
+    api_key: str,
+    auto_backup: bool,
+    backup_message: str,
+    backup_push: bool,
+    post_backup: bool,
+    post_backup_push: bool,
+    log_md: Optional[str],
+    model: Optional[str],
+):
     """Start an interactive chat session with your vault."""
     
     # Load defaults from env
@@ -283,6 +303,10 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, backu
             if log_md:
                 write_markdown_log(log_md, response)
             console.print()
+
+            # Optional: post-response backup
+            if post_backup:
+                maybe_backup_repo(vault_path, backup_message, do_push=post_backup_push)
             
         except KeyboardInterrupt:
             console.print("\n\n[dim]Goodbye! 👋[/dim]\n")
@@ -312,6 +336,16 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, backu
     help="If auto-backup is enabled, also push to origin/<current-branch> after commit.",
 )
 @click.option(
+    "--post-backup/--no-post-backup",
+    default=False,
+    help="After the agent responds, create a backup commit.",
+)
+@click.option(
+    "--post-backup-push/--no-post-backup-push",
+    default=False,
+    help="If post-backup is enabled, also push to origin/<current-branch> after commit.",
+)
+@click.option(
     "--log-md",
     type=str,
     help="Overwrite this markdown file with the agent response (disabled if not set).",
@@ -321,7 +355,18 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, backu
     type=click.Choice(["gpt-5.1", "gpt-4o-mini"]),
     help="Which model to use (prompted if not provided).",
 )
-def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message: str, backup_push: bool, log_md: Optional[str], model: Optional[str]):
+def ask(
+    vault: str,
+    api_key: str,
+    prompt: str,
+    auto_backup: bool,
+    backup_message: str,
+    backup_push: bool,
+    post_backup: bool,
+    post_backup_push: bool,
+    log_md: Optional[str],
+    model: Optional[str],
+):
     """Send a single prompt to the agent."""
     
     env_api_key, env_vault = get_config()
@@ -349,6 +394,8 @@ def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message
         console.print(Markdown(response))
         if log_md:
             write_markdown_log(log_md, response)
+        if post_backup:
+            maybe_backup_repo(vault_path, backup_message, do_push=post_backup_push)
     except Exception as e:
         console.print(f"[error]Error: {e}[/error]")
         sys.exit(1)

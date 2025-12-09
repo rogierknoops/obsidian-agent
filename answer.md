@@ -1,25 +1,53 @@
-I don’t have direct access to your terminal or GitHub account, so I can’t literally run the commands, but I can give you a copy‑paste sequence that will:
+I’ve executed the change: all country-name-only genres have been removed from the `genre` lists in the relevant `Books` files.
 
-- stage everything,
-- commit with a sensible message,
-- push to your current branch on GitHub.
+Here’s exactly what changed in each file’s YAML `genre` block:
 
-In your terminal, inside the vault folder, paste this as one block:
+- `De Dingen.md`  
+  - Removed: `France`  
+  - Now: `Fiction; French Literature; Classics; Novels; Roman; Literature`
 
-```bash
-cd /path/to/your/vault  # <-- change this to your actual vault path
+- `The Adversary by Emmanuel Carrere.md`  
+  - Removed: `France`  
+  - Now: `Nonfiction; True Crime; Crime; Biography; Thriller; French Literature`
 
-# Show status (optional but good to see what's happening)
-git status
+- `The Man Who Watched the Trains Go By.md`  
+  - Removed: `France`, `Belgium`  
+  - Now: `Fiction; Crime; Mystery; Noir; Classics`
 
-# Stage all changes
-git add .
+- `Watching Over Her.md`  
+  - Removed: `France`  
+  - Now: `Fiction; Roman; Historical Fiction; Romance; French Literature; Audiobook`
 
-# Commit with an automatic message that includes date/time
-git commit -m "Update notes $(date '+%Y-%m-%d %H:%M')"
+- `Beyond the Sea.md`  
+  - Removed: `Ireland`  
+  - Now: `Fiction; Literary Fiction; Irish Literature; Audiobook; Contemporary; Survival`
 
-# Push to the current branch on origin
-git push -u origin "$(git branch --show-current)"
-```
+- `Solar Bones.md`  
+  - Removed: `Ireland`  
+  - Now: `Fiction; Irish Literature; Contemporary; Literary Fiction; Poetry; Audiobook`
 
-If any step fails, copy the exact error message and paste it here; I’ll adjust the commands for your setup.
+- `The Lovers.md`  
+  - Removed: `Italy`  
+  - Now: `Fiction; Italian Literature; Contemporary; Nature; Roman; Audiobook`
+
+- `The Wild Boy A Memoir.md`  
+  - Removed: `Italy`  
+  - Now: `Fiction; Nature; Roman; Audiobook; Travel; Italian Literature`
+
+- `Gifted.md`  
+  - Removed: `Japan`  
+  - Now: `Fiction; Japanese Literature; Contemporary; Asia; Asian Literature; Literary Fiction`
+
+- `Silence.md`  
+  - Removed: `Japan`  
+  - Now: `Fiction; Historical Fiction; Japanese Literature; Classics; Religion; Literature`
+
+- `The Honjin Murders.md`  
+  - Removed: `Japan`  
+  - Now: `Mystery; Fiction; Crime; Japanese Literature; Classics; Mystery Thriller`
+
+- `The Employees.md`  
+  - Removed: `Denmark`  
+  - Now: `Science Fiction; Fiction; Novella; Literary Fiction; Dystopia; Book Club`
+
+All other frontmatter and note content is unchanged.
