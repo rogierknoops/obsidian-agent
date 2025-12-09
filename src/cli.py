@@ -47,13 +47,18 @@ def choose_model(provided: str | None) -> str:
     """
     if provided:
         return provided
-    console.print("[info]Select model: gpt-5.1 (stronger) or gpt-4o-mini (faster/cheaper)[/info]")
-    return Prompt.ask(
-        "Model",
-        choices=["gpt-5.1", "gpt-4o-mini"],
-        default="gpt-5.1",
+    console.print("[info]Select model: [bold]1[/bold] = gpt-5.1 (stronger), [bold]2[/bold] = gpt-4o-mini (faster/cheaper)[/info]")
+    choice = Prompt.ask(
+        "Model (1=gpt-5.1, 2=gpt-4o-mini)",
+        choices=["1", "2", "gpt-5.1", "gpt-4o-mini"],
+        default="1",
         show_choices=True,
     )
+    if choice == "1":
+        return "gpt-5.1"
+    if choice == "2":
+        return "gpt-4o-mini"
+    return choice
 
 
 def maybe_backup_repo(vault_path: Path, default_message: str):
