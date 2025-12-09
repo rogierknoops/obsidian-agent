@@ -40,6 +40,22 @@ def get_config():
     return api_key, vault_path
 
 
+def choose_model(provided: str | None) -> str:
+    """
+    Ask which model to use if not provided.
+    gpt-5.1: stronger reasoning; gpt-4o-mini: faster/cheaper.
+    """
+    if provided:
+        return provided
+    console.print("[info]Select model: gpt-5.1 (stronger) or gpt-4o-mini (faster/cheaper)[/info]")
+    return Prompt.ask(
+        "Model",
+        choices=["gpt-5.1", "gpt-4o-mini"],
+        default="gpt-5.1",
+        show_choices=True,
+    )
+
+
 def maybe_backup_repo(vault_path: Path, default_message: str):
     """Optionally create a git commit before edits."""
     git_dir = vault_path / ".git"
@@ -112,7 +128,12 @@ def cli():
     show_default=True,
     help="Commit message to use if auto-backup is enabled.",
 )
-def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str):
+@click.option(
+    "--model",
+    type=click.Choice(["gpt-5.1", "gpt-4o-mini"]),
+    help="Which model to use (prompted if not provided).",
+)
+def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, model: str | None):
     """Start an interactive chat session with your vault."""
     
     # Load defaults from env
@@ -136,12 +157,14 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str):
         console.print(f"[error]Error: Vault path does not exist: {vault_path}[/error]")
         sys.exit(1)
     
+    selected_model = choose_model(model)
+
     if auto_backup:
         maybe_backup_repo(vault_path, backup_message)
 
     # Initialize agent
     try:
-        agent = VaultAgent(str(vault_path), api_key)
+        agent = VaultAgent(str(vault_path), api_key, model=selected_model)
     except Exception as e:
         console.print(f"[error]Error initializing agent: {e}[/error]")
         sys.exit(1)
@@ -151,7 +174,7 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str):
     console.print(Panel.fit(
         "[bold cyan]🗃️  Obsidian Vault Agent[/bold cyan]\n\n"
         f"[dim]Connected to:[/dim] {vault_path.name}/\n"
-        f"[dim]Model:[/dim] GPT-5.1\n\n"
+        f"[dim]Model:[/dim] {selected_model}\n\n"
         "[dim]Commands:[/dim]\n"
         "  • Type your questions or instructions\n"
         "  • [bold]/tree[/bold] - Show vault structure\n"
@@ -230,7 +253,12 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str):
     show_default=True,
     help="Commit message to use if auto-backup is enabled.",
 )
-def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message: str):
+@click.option(
+    "--model",
+    type=click.Choice(["gpt-5.1", "gpt-4o-mini"]),
+    help="Which model to use (prompted if not provided).",
+)
+def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message: str, model: str | None):
     """Send a single prompt to the agent."""
     
     env_api_key, env_vault = get_config()
@@ -249,8 +277,10 @@ def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message
     if auto_backup:
         maybe_backup_repo(vault_path, backup_message)
 
+    selected_model = choose_model(model)
+
     try:
-        agent = VaultAgent(str(vault_path), api_key)
+        agent = VaultAgent(str(vault_path), api_key, model=selected_model)
         with console.status("[cyan]Thinking...[/cyan]", spinner="dots"):
             response = agent.chat(prompt)
         console.print(Markdown(response))
