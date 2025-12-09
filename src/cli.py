@@ -62,8 +62,8 @@ def choose_model(provided: str | None) -> str:
     return choice
 
 
-def maybe_backup_repo(vault_path: Path, default_message: str):
-    """Optionally create a git commit before edits."""
+def maybe_backup_repo(vault_path: Path, default_message: str, do_push: bool = False):
+    """Optionally create a git commit (and optionally push) before edits."""
     git_dir = vault_path / ".git"
     if not git_dir.exists():
         console.print("[warning]Skipping backup: no .git repository found in vault[/warning]")
@@ -110,7 +110,30 @@ def maybe_backup_repo(vault_path: Path, default_message: str):
         return
 
     console.print("[success]✓ Backup commit created[/success]")
-    console.print("[dim]Review then push when ready: git push[/dim]")
+    if do_push:
+        # Detect current branch
+        branch = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            cwd=vault_path,
+            capture_output=True,
+            text=True,
+        )
+        if branch.returncode != 0:
+            console.print(f"[warning]git push skipped (could not detect branch): {branch.stderr.strip()}[/warning]")
+            return
+        branch_name = branch.stdout.strip()
+        push = subprocess.run(
+            ["git", "push", "origin", branch_name],
+            cwd=vault_path,
+            capture_output=True,
+            text=True,
+        )
+        if push.returncode != 0:
+            console.print(f"[warning]git push failed: {push.stderr.strip()}[/warning]")
+            return
+        console.print(f"[success]✓ Backup pushed to origin/{branch_name}[/success]")
+    else:
+        console.print("[dim]Review then push when ready: git push[/dim]")
 
 
 def write_markdown_log(log_path: str, content: str):
@@ -145,6 +168,11 @@ def cli():
     help="Commit message to use if auto-backup is enabled.",
 )
 @click.option(
+    "--backup-push/--no-backup-push",
+    default=False,
+    help="If auto-backup is enabled, also push to origin/<current-branch> after commit.",
+)
+@click.option(
     "--log-md",
     type=str,
     help="Overwrite this markdown file with each agent response (disabled if not set).",
@@ -154,7 +182,7 @@ def cli():
     type=click.Choice(["gpt-5.1", "gpt-4o-mini"]),
     help="Which model to use (prompted if not provided).",
 )
-def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, log_md: Optional[str], model: Optional[str]):
+def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, backup_push: bool, log_md: Optional[str], model: Optional[str]):
     """Start an interactive chat session with your vault."""
     
     # Load defaults from env
@@ -181,7 +209,7 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, log_m
     selected_model = choose_model(model)
 
     if auto_backup:
-        maybe_backup_repo(vault_path, backup_message)
+        maybe_backup_repo(vault_path, backup_message, do_push=backup_push)
 
     # Initialize agent
     try:
@@ -279,6 +307,11 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, log_m
     help="Commit message to use if auto-backup is enabled.",
 )
 @click.option(
+    "--backup-push/--no-backup-push",
+    default=False,
+    help="If auto-backup is enabled, also push to origin/<current-branch> after commit.",
+)
+@click.option(
     "--log-md",
     type=str,
     help="Overwrite this markdown file with the agent response (disabled if not set).",
@@ -288,7 +321,7 @@ def chat(vault: str, api_key: str, auto_backup: bool, backup_message: str, log_m
     type=click.Choice(["gpt-5.1", "gpt-4o-mini"]),
     help="Which model to use (prompted if not provided).",
 )
-def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message: str, log_md: Optional[str], model: Optional[str]):
+def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message: str, backup_push: bool, log_md: Optional[str], model: Optional[str]):
     """Send a single prompt to the agent."""
     
     env_api_key, env_vault = get_config()
@@ -305,7 +338,7 @@ def ask(vault: str, api_key: str, prompt: str, auto_backup: bool, backup_message
     
     vault_path = Path(vault).expanduser().resolve()
     if auto_backup:
-        maybe_backup_repo(vault_path, backup_message)
+        maybe_backup_repo(vault_path, backup_message, do_push=backup_push)
 
     selected_model = choose_model(model)
 

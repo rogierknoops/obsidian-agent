@@ -52,6 +52,7 @@ obsidian-agent/
 - Optional `--auto-backup` flag (chat/ask) will create a git commit in the vault before edits (no push).
 - Default commit message: "Add a description of the changes" (you can edit at prompt).
 - You must push manually after reviewing: `git push`.
+- Optional `--backup-push` will push to origin/<current-branch> after the commit.
 
 ### Models
 - CLI prompts for model if none provided: choose between `gpt-5.1` (stronger reasoning) and `gpt-4o-mini` (faster/cheaper).
